@@ -1,5 +1,5 @@
 from pandas.core.indexes.datetimes import datetime
-import config
+# import config
 import ccxt
 import datetime as dt
 import dateutil.parser
@@ -9,11 +9,10 @@ import plotly.graph_objects as go
 import pandas as pd
 import streamlit as st
 
-
 exchange = ccxt.bitstamp({
     'enableRateLimit': False,
-    'apiKey': config.API_KEY,
-    'secret': config.SECRET_KEY,
+    'apiKey': st.secrets["bitstamp_api_key"],
+    'secret': st.secrets["bitstamp_secret"],
     })
 
 open_orders = exchange.fetch_open_orders()
@@ -74,11 +73,6 @@ today = today.replace(tzinfo=dt.timezone.utc)
 lookback_df = trades_df[(trades_df['datetime'] > today - dt.timedelta(days=lookback_days)) & (trades_df['symbol'] == selected_bot)]
 st.write(lookback_df)
 
-# # Can't rely on counting buy and sell filled orders because there are partial fills that mess the numbers up
-# col1, col2 = st.columns(2)
-# col1.metric(f"{lookback_days} days sells", sell_count) 
-# col2.metric(f"{lookback_days} days buys", buy_count)
-#
 sell_cost = lookback_df.loc[lookback_df['side'] == 'sell']['cost'].sum()
 buy_cost = lookback_df.loc[lookback_df['side'] == 'buy']['cost'].sum()
 
