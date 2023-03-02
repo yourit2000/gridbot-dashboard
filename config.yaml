@@ -1,0 +1,17 @@
+credentials:
+  usernames:
+    john:
+      email: emailjohnhong@gmail.com
+      name: John Hong
+      password: $2b$12$52wR3mqGolLNE0OjqltUaukn8SLVo3HjIAzlGl3wsLpN2qoISz6bS
+    mike:
+      email: michaeyk@gmail.com
+      name: Michael Kim
+      password: $2b$12$ALcpWq.QYPD9P1FiMS.cMOwXtgjltAgKLpUFUkAhbvCT/8hA.uV96 
+cookie:
+  expiry_days: 30
+  key: 'dashboard_key' # Must be string
+  name: 'gridbot-dashboard'
+preauthorized:
+  emails:
+  - michaeyk@gmail.com

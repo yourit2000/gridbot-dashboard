@@ -1,4 +1,6 @@
 ccxt
 streamlit
+streamlit-authenticator
 pandas
 plotly
+
