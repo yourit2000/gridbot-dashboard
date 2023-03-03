@@ -1,13 +1,12 @@
-from pandas.core.indexes.datetimes import datetime
 import ccxt
 import datetime as dt
-import dateutil.parser
 import time
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import streamlit as st
 import streamlit_authenticator as stauth
+import streamlit_autorefresh
 import yaml
 
 
@@ -30,6 +29,9 @@ name, authentication_status, username = authenticator.login('Login', 'main')
 
 if authentication_status:
     authenticator.logout('Logout', 'main')
+
+    count = streamlit_autorefresh.st_autorefresh(interval=5 * 60 * 1000, key="chartcounter")
+
     exchange = ccxt.bitstamp({
         'enableRateLimit': False,
         'apiKey': st.secrets["bitstamp_api_key"],
@@ -50,8 +52,6 @@ if authentication_status:
 
     balances = exchange.fetch_balance()
 
-    # ohlc = exchange.fetch_ohlcv(selected_bot, '5m')
-
     # fetch OHLCV bars
     def fetch_ohlcv(exchange, symbol, timeframe='15m'):
         if exchange.has['fetchOHLCV']:
@@ -64,12 +64,12 @@ if authentication_status:
     # check to see if bot is up? 
     st.title('🤖 Gridbot Dashboard') 
 
-    olhc = fetch_ohlcv(exchange, selected_bot)
-    fig = go.Figure(data=[go.Candlestick(x=olhc['timestamp'],
-                                         open=olhc['open'],
-                                         high=olhc['high'],
-                                         low=olhc['low'],
-                                         close=olhc['close'])])
+    ohlc = fetch_ohlcv(exchange, selected_bot)
+    fig = go.Figure(data=[go.Candlestick(x=ohlc['timestamp'],
+                                         open=ohlc['open'],
+                                         high=ohlc['high'],
+                                         low=ohlc['low'],
+                                         close=ohlc['close'])])
 
     # draw horizontal lines at open orders
     for order in open_orders:
@@ -81,7 +81,9 @@ if authentication_status:
 
     fig.update_layout(
             title=selected_bot,
+            xaxis_range=[ohlc['timestamp'].iloc[0], ohlc['timestamp'].iloc[-1] + dt.timedelta(hours=4)],
             xaxis_rangeslider_visible=False)
+
     st.plotly_chart(fig)
 
     st.header(f"{selected_bot} Bot")
@@ -116,9 +118,9 @@ if authentication_status:
     fig = px.pie(balances, values=values, names=cryptos, title='🪙 Allocations')
     st.plotly_chart(fig)
 
-    ###########
-    # Sidebar #
-    ###########
+    ##############
+    # Sidebar    #
+    ##############
     st.sidebar.header('💰 Total Balance')
 
     # total_balance = balances['USD']
