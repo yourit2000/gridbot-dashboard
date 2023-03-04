@@ -96,14 +96,31 @@ if authentication_status:
     lookback_df = trades_df[(trades_df['datetime'] > today - dt.timedelta(days=lookback_days)) & (trades_df['symbol'] == selected_bot)]
     st.write(lookback_df)
 
-    sell_cost = lookback_df.loc[lookback_df['side'] == 'sell']['cost'].sum()
-    buy_cost = lookback_df.loc[lookback_df['side'] == 'buy']['cost'].sum()
+    sell_amount = lookback_df.loc[lookback_df['side'] == 'sell']['amount'].sum()
+    buy_amount = lookback_df.loc[lookback_df['side'] == 'buy']['amount'].sum()
+    
 
     col3, col4 = st.columns(2)
-    col3.metric(f"All sell orders in last {lookback_days} days", f"${sell_cost:.2f}")
-    col4.metric(f"All buy orders in the last {lookback_days} days", f"${buy_cost:.2f}")
+    col3.metric(f"All buy orders in the last **{lookback_days}** days", f"{buy_amount:.2f} {selected_bot}")
+    col4.metric(f"All sell orders in last **{lookback_days}** days", f"{sell_amount:.2f} {selected_bot}")
 
-    st.metric(f"{lookback_days} Days P&L", f"${sell_cost - buy_cost:.2f}")
+    # st.metric(f"{lookback_days} Days P&L", f"${sell_cost - buy_cost:.2f}")
+    sell_cost_basis = lookback_df.loc[lookback_df['side'] == 'sell']['cost'].sum() * -1
+    buy_cost_basis = lookback_df.loc[lookback_df['side'] == 'buy']['cost'].sum()
+
+    cost_basis = buy_cost_basis + sell_cost_basis
+
+    current_price = prices[selected_bot]
+
+    diff = sell_amount - buy_amount
+    diff_cost = diff * current_price
+
+    # since we make money on the sell side it is relected as negative when profitable
+    # so change the sign
+    profit = cost_basis + diff_cost  
+    profit = profit * -1
+
+    st.metric(f"**{lookback_days}** Days P&L", f"${profit:.2f}")
 
     ##############
     # Pie Chart  #
@@ -121,30 +138,32 @@ if authentication_status:
     ##############
     # Sidebar    #
     ##############
-    st.sidebar.header('💰 Total Balance')
-
-    # total_balance = balances['USD']
-    total_balance = balances['USD']['total']
-    # TODO: we can us the dataframe and vectorize this
-    for crypto in cryptos:
-        if crypto != 'USD':
-            total_balance += balances[crypto]['total'] * prices[crypto+'/USD']
-        
-    st.sidebar.write(f"**${total_balance:.2f}** Total Balance")
-    st.sidebar.write(f"**{total_balance/prices['BTC/USD']}** BTC")
-
     crypto = selected_bot.split('/')[0]
     st.sidebar.write(f'## {selected_bot} Balance')
-    st.sidebar.write(f"**{balances[crypto]['used']}** {crypto} Used")
-    st.sidebar.write(f"**{balances[crypto]['free']}** {crypto} Free")
-    st.sidebar.write(f"**{balances[crypto]['total']}** {crypto} Total")
+    st.sidebar.write(f"**{balances[crypto]['used']:.4f}** {crypto} Used")
+    st.sidebar.write(f"**{balances[crypto]['free']:.4f}** {crypto} Free")
+    st.sidebar.write(f"**{balances[crypto]['total']:.4f}** {crypto} Total")
 
     st.sidebar.write('## USD Balance')
     st.sidebar.write(f"**${balances['USD']['used']}** Used")
     st.sidebar.write(f"**${balances['USD']['free']}** Free")
     st.sidebar.write(f"**${balances['USD']['total']}** Total")
 
-    # TODO: Heartbeat to make sure bots are running
+    st.sidebar.header('💰 Total Balance')
+
+    
+    total_balance = balances['USD']['total']
+    for crypto in cryptos:
+        if crypto != 'USD':
+            total_balance += balances[crypto]['total'] * prices[crypto+'/USD']
+
+    btc_usd = exchange.fetch_ticker('BTC/USD')['last']
+    st.sidebar.write(f"**${total_balance:.2f}**  🚀 **{total_balance/btc_usd:.4f}** BTC")
+    
+    # deposits 
+    # not implemented in ccxt yet
+    # deposits = exchange.fetch_deposits()
+    # st.sidebar.write(deposits)
 
 elif authentication_status is False:
     st.error('Username/password is incorrect')
